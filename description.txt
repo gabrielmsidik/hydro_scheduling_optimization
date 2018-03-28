@@ -1,0 +1,14 @@
+DESCRIPTION
+
+Attempting to solve the problem case study presented in Chapter 8 
+    Optimal scheduling of a multi-unit hydro power station in a short-term planning horizon
+        by 
+        Alberto Borghetti, Claudia D’Ambrosio, Andrea Lodi, and Silvano Martello
+
+Taken from:
+    Case Studies in Operations Research: Applications of Optimal Decision Making
+        Editors: Murty, Katta G (Ed.)
+
+Original Problem can be found here:
+https://static-content.springer.com/esm/chp%3A10.1007%2F978-1-4939-1007-6_8/MediaObjects/273578_1_En_8_MOESM1_ESM.pdf
+
