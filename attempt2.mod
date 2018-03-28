@@ -71,10 +71,10 @@ execute {
 			var value = 0;
 			
 			for (var k in kRange) {
-				value += K[k] * Math.pow(10000 * extremeWaterVolumes[r], k) - 385 - 0.01 * flowAtBreakPointValues[z] * flowAtBreakPointValues[z];			
+				value += K[k] * Math.pow(10000 * extremeWaterVolumes[r], k);			
 			}
 			
-			innerSum[r][z] = value;
+			innerSum[r][z] = value  - 385 - 0.01 * flowAtBreakPointValues[z] * flowAtBreakPointValues[z];
 		}	
 	}
 }
@@ -102,7 +102,7 @@ float power[intervalsWith0][breakPointsWith0];
 execute {
 	for(var z in breakPointsWith0) {
 		for (var r in intervalsWith0) {
-			power[r][z] = 9.81/1000 * flowAtBreakPointValues[z] * outerSum[r][z] * innerSum[r][z];
+			power[r][z] = 9.81/1000 * flowAtBreakPointValues[z] * outerSum[r][z];
  		}			
 	}
 }
