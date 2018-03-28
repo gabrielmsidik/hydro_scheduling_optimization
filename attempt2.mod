@@ -245,7 +245,7 @@ subject to {
 		
 	cons08:
 		forall(t in periods) {
-			spillage[t] - (waterToStartPump * wtilda[t] + waterToStartTurbine * ytilda[t]) >= 0; 
+			spillage[t] - (waterToStartPump * ytilda[t] + waterToStartTurbine * wtilda[t]) >= 0; 
 		}
 		
 	cons09:
@@ -274,6 +274,14 @@ subject to {
 	cons1201:
 		pumpStatus[0] == initialPumpStatus;
 		
+		
+	/*
+	// artificial constraints to force pump to be turned on
+	// to be used to check impact on pump on other variables
+	//	such as:
+	//			I.		powerProduced
+	//			II.		volume
+	//			III.	spillage
 	
 	cons1202:
 		pumpStatus[1] == 1;
@@ -286,6 +294,10 @@ subject to {
 		
 	cons1205:
 		pumpStatus[4] == 1;
+	*/
+	
+	
+	
 	
 	cons13:
 		forall(t in periods) {
@@ -367,7 +379,7 @@ subject to {
 			powerProduced[t] >= powerConsumedByPump;	
 		}
 	cons34:
-		forall(t in periods) {
+		forall(t in periodsWith0) {
 			spillage[t] >= 0;
 			// spillage[t]	<= waterToStartPump * ytilda[t]  + waterToStartTurbine * wtilda[t];	
 		}
