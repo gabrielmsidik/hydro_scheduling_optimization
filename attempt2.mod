@@ -274,7 +274,7 @@ subject to {
 	cons1201:
 		pumpStatus[0] == initialPumpStatus;
 		
-	/*
+	
 	cons1202:
 		pumpStatus[1] == 1;
 		
@@ -286,7 +286,7 @@ subject to {
 		
 	cons1205:
 		pumpStatus[4] == 1;
-	*/
+	
 	
 	cons13:
 		forall(t in periods) {
@@ -369,6 +369,7 @@ subject to {
 		}
 	cons34:
 		forall(t in periods) {
-			spillage[t] >= 0;		
+			spillage[t] >= 0;
+			// spillage[t]	<= waterToStartPump * ytilda[t]  + waterToStartTurbine * wtilda[t];	
 		}
 }
