@@ -17,7 +17,7 @@ range periods			= 			1..noOfPeriods;
 range periodsWith0		=			0..noOfPeriods;
 
 range breakPoints 		= 			1..noOfBreakPoints;
-range breakPointsWith0	=			0..noOfPeriods;
+range breakPointsWith0	=			0..noOfBreakPoints;
 
 range intervals			=			1..noOfIntervals;
 range intervalsWith0	=			0..noOfIntervals;
@@ -25,7 +25,7 @@ range intervalsWith0	=			0..noOfIntervals;
 range hRange			=			0..6;
 range kRange			=			0..6;
 
-float L[hRange] = [4.09863600116008, -1.25535942295343, 0.160530264942775, -9.76201903589132*10^-3, 0.00030942942997293, -4.92928898248035 * 10^-6, 3.11519548768 * 10^-8];
+float L[hRange] = [4.09863600116008, -1.25535942295343, 0.160530264942775, -0.00976201903589132, 0.00030942942997293, -4.92928898248035 * 10^-6, 3.11519548768 * 10^-8];
 float K[kRange] = [307.395, 3.88*10^-5, -4.37*10^-12, 2.65*10^-19, -8.87*10^-27, 1.55*10^-34,-1.11*10^-42];
 
 // variables
@@ -74,7 +74,7 @@ execute {
 				value += K[k] * Math.pow(10000 * extremeWaterVolumes[r], k);			
 			}
 			
-			innerSum[r][z] = value  - 385 - 0.01 * flowAtBreakPointValues[z] * flowAtBreakPointValues[z];
+			innerSum[r][z] = value  - 385 - 0.01 * Math.pow(flowAtBreakPointValues[z], 2);
 		}	
 	}
 }
@@ -111,7 +111,7 @@ float maxPowerDifference[intervals];
 
 execute {
 	for(var r in intervals) {
-		var max = -1111111111111111111111111111111111111;
+		var max = -1 * 100000000;
 		
 		for (var i in breakPoints) {
 			var current = power[r][5] - power[r][i];
@@ -136,7 +136,7 @@ float initialTurbineStatus	= 0;
 float initialPumpStatus		= 0;
 
 float pumpFlow				= -27;
-float powerConsumedByPump	=  -21.5;
+float powerConsumedByPump	= -21.5;
 float minWaterReleased		= 0;
 
 // normal variables (as indicated on page 170)
@@ -158,15 +158,13 @@ dvar int ytilda[periods]						in		0..1;		// ytilda refers to the shutdown phase 
 dvar int pumpStatus[periodsWith0]				in		0..1;
 
 
-// new variables added for inearization
+// new variables added for linearization
 
 dvar int membershipStatus[periods][intervals]	in		0..1;		// is the volume of water for that particular period within this interval?
 dvar int contiguityStatus[periods][breakPoints]	in		0..1;		// is the waterflow value near this breakpoint? (between this breakpoint and the prior/subsequent one)
 dvar float weight[periods][breakPoints] 		in		0..1;		// weightage of how it leans towards which breakpoint (only non-zero when breakpoint is 1)
 
 
-// stand in objective Function (NOTE: The values in the 2D-array power[r][z])
-// some form of computation needs to be done for the power[r][z] function to give a variable to throw into this formula
 
 
 
@@ -178,10 +176,10 @@ dvar float weight[periods][breakPoints] 		in		0..1;		// weightage of how it lean
 
 
 
+dexpr float moneyEarnt[t in periods] = price[t] * intervalLength * powerProduced[t] - turbineStartCost * wtilda[t] - (pumpStartCost + price[t] * energyToStartPump) * ytilda[t];
+dexpr float objfunction = sum(t in periods) moneyEarnt[t];
 
 
-
-dexpr float objfunction = sum(t in periods) (price[t] * intervalLength * powerProduced[t] - turbineStartCost * wtilda[t] - (pumpStartCost + price[t] * energyToStartPump) * ytilda[t]);
 
 maximize objfunction;
 
@@ -228,7 +226,7 @@ subject to {
 		
 	cons06:
 		forall(t in periods) {
-			waterFlow[t] - waterFlow[t - 1] + 3600 * maxRampDown >= 0;		
+			waterFlow[t] - waterFlow[t - 1] + intervalLength * maxRampDown >= 0;		
 		}
 		
 	cons067:
@@ -236,7 +234,7 @@ subject to {
 		
 	cons07:
 		forall(t in periods) {
-			waterFlow[t] - waterFlow[t - 1] - 3600 * maxRampUp <= 0;		
+			waterFlow[t] - waterFlow[t - 1] - intervalLength * maxRampUp <= 0;		
 		}
 		
 	cons08:
@@ -251,7 +249,7 @@ subject to {
 		
 	cons10:
 		forall(t in periods) {
-			turbineStatus[t] - turbineStatus[t - 1] - wtilda[t] + w[t] == 0;		
+			turbineStatus[t] - turbineStatus[t - 1] - (wtilda[t] - w[t]) == 0;		
 		}
 		
 	cons1001:
@@ -264,7 +262,7 @@ subject to {
 		
 	cons12:
 		forall(t in periods) {
-			pumpStatus[t] - pumpStatus[t - 1] - ytilda[t] + y[t] == 0;		
+			pumpStatus[t] - pumpStatus[t - 1] - (ytilda[t] - y[t]) == 0;		
 		}
 		
 	cons1201:
@@ -313,11 +311,20 @@ subject to {
 	
 	cons23:
 		forall(t in periods) {
+		
 			powerProduced[t] - (sum(i in breakPoints)(weight[t][i] * power[1][i])) - powerConsumedByPump * pumpStatus[t]  - maxPowerDifference[1] * (1 - membershipStatus[t][1])  <= 0;
 			powerProduced[t] - (sum(i in breakPoints)(weight[t][i] * power[2][i])) - powerConsumedByPump * pumpStatus[t]  - maxPowerDifference[2] * (1 - membershipStatus[t][2])  <= 0;	
 			powerProduced[t] - (sum(i in breakPoints)(weight[t][i] * power[3][i])) - powerConsumedByPump * pumpStatus[t]  - maxPowerDifference[3] * (1 - membershipStatus[t][3])  <= 0;	
 			powerProduced[t] - (sum(i in breakPoints)(weight[t][i] * power[4][i])) - powerConsumedByPump * pumpStatus[t]  - maxPowerDifference[4] * (1 - membershipStatus[t][4])  <= 0;	
 			powerProduced[t] - (sum(i in breakPoints)(weight[t][i] * power[5][i])) - powerConsumedByPump * pumpStatus[t]  - maxPowerDifference[5] * (1 - membershipStatus[t][5])  <= 0;
+		
+		/*
+			powerProduced[t] - (sum(i in breakPoints)(weight[t][i] * power[1][i])) - powerConsumedByPump * pumpStatus[t] <= 0;
+			powerProduced[t] - (sum(i in breakPoints)(weight[t][i] * power[2][i])) - powerConsumedByPump * pumpStatus[t] <= 0;	
+			powerProduced[t] - (sum(i in breakPoints)(weight[t][i] * power[3][i])) - powerConsumedByPump * pumpStatus[t] <= 0;	
+			powerProduced[t] - (sum(i in breakPoints)(weight[t][i] * power[4][i])) - powerConsumedByPump * pumpStatus[t] <= 0;	
+			powerProduced[t] - (sum(i in breakPoints)(weight[t][i] * power[5][i])) - powerConsumedByPump * pumpStatus[t] <= 0;
+		*/
 		}
 	
 	cons24:
@@ -330,13 +337,13 @@ subject to {
 			volume[t] - (sum(r in intervals)(extremeWaterVolumes[r] * membershipStatus[t][r])) <= 0;	
 		}
 		
-		
+		/*
 	cons31:
 		forall(t in periods) {
 			waterFlow[t] >= pumpFlow;
 			waterFlow[t] <= maxFlowTurbineOn;			
 		}
-		
+		*/
 	cons32:
 		forall(t in periods) {
 			volume[t] >= minVolume;
