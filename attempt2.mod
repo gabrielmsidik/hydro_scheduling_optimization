@@ -144,25 +144,27 @@ float minWaterReleased		= 0;
 dvar float waterFlow[periodsWith0];
 dvar float volume[periodsWith0];
 dvar float spillage[periods];
+dvar float powerProduced[periods];
 
-// w refers to the start-up phase of TURBINE
-dvar int w[periods]								in		0..1;
-dvar int wtilda[periods]						in 		0..1;
+
+dvar int w[periods]								in		0..1;		// w refers to the start-up phase of TURBINE
+dvar int wtilda[periods]						in 		0..1;		// wtilda refers to the shutdown phase of TURBINE
 dvar int turbineStatus[periodsWith0]			in		0..1;
 
 
 // y refer to the start-up phase of PUMP
-dvar int y[periods] 							in		0..1;
-dvar int ytilda[periods]						in		0..1;
+dvar int y[periods] 							in		0..1;		// y refers to the start-up phase of PUMP
+dvar int ytilda[periods]						in		0..1;		// ytilda refers to the shutdown phase of PUMP
 dvar int pumpStatus[periodsWith0]				in		0..1;
+
 
 // new variables added for inearization
 
-dvar int membershipStatus[periods][intervals]	in		0..1;
-dvar int contiguityStatus[periods][breakPoints]	in		0..1;
-dvar float weight[periods][breakPoints] 		in		0..1;
+dvar int membershipStatus[periods][intervals]	in		0..1;		// is the volume of water for that particular period within this interval?
+dvar int contiguityStatus[periods][breakPoints]	in		0..1;		// is the waterflow value near this breakpoint? (between this breakpoint and the prior/subsequent one)
+dvar float weight[periods][breakPoints] 		in		0..1;		// weightage of how it leans towards which breakpoint (only non-zero when breakpoint is 1)
 
-dvar float powerProduced[periods];
+
 // stand in objective Function (NOTE: The values in the 2D-array power[r][z])
 // some form of computation needs to be done for the power[r][z] function to give a variable to throw into this formula
 
@@ -282,12 +284,12 @@ subject to {
 	
 	cons18:
 		forall(t in periods) {
-			waterFlow[t] - sum(i in breakPoints)(weight[t][i] * flowAtBreakPointValues[i]) - maxRampDown * pumpFlow == 0;		
+			waterFlow[t] - (sum(i in breakPoints)(weight[t][i] * flowAtBreakPointValues[i])) - pumpFlow * pumpStatus[t] == 0;		
 		}
 		
 	cons19:
 		forall(t in periods) {
-			(sum(i in breakPoints) weight[t][i]) - pumpStatus[t] == 0; 		
+			(sum(i in breakPoints) weight[t][i]) - turbineStatus[t] == 0; 		
 		}
 	
 	cons20:
@@ -309,26 +311,23 @@ subject to {
 			(sum(r in intervals) membershipStatus[t][r]) == 1;	
 		}
 	
-	
-	// power[intervalsWith0][breakPointsWith0]
-	
 	cons23:
 		forall(t in periods) {
 			powerProduced[t] - (sum(i in breakPoints)(weight[t][i] * power[1][i])) - powerConsumedByPump * pumpStatus[t]  - maxPowerDifference[1] * (1 - membershipStatus[t][1])  <= 0;
-			powerProduced[t] - sum(i in breakPoints)(weight[t][i] * power[2][i]) - powerConsumedByPump * pumpStatus[t]  - maxPowerDifference[2] * (1 - membershipStatus[t][2])  <= 0;	
-			powerProduced[t] - sum(i in breakPoints)(weight[t][i] * power[3][i]) - powerConsumedByPump * pumpStatus[t]  - maxPowerDifference[3] * (1 - membershipStatus[t][3])  <= 0;	
-			powerProduced[t] - sum(i in breakPoints)(weight[t][i] * power[4][i]) - powerConsumedByPump * pumpStatus[t]  - maxPowerDifference[4] * (1 - membershipStatus[t][4])  <= 0;	
-			powerProduced[t] - sum(i in breakPoints)(weight[t][i] * power[5][i]) - powerConsumedByPump * pumpStatus[t]  - maxPowerDifference[5] * (1 - membershipStatus[t][5])  <= 0;
+			powerProduced[t] - (sum(i in breakPoints)(weight[t][i] * power[2][i])) - powerConsumedByPump * pumpStatus[t]  - maxPowerDifference[2] * (1 - membershipStatus[t][2])  <= 0;	
+			powerProduced[t] - (sum(i in breakPoints)(weight[t][i] * power[3][i])) - powerConsumedByPump * pumpStatus[t]  - maxPowerDifference[3] * (1 - membershipStatus[t][3])  <= 0;	
+			powerProduced[t] - (sum(i in breakPoints)(weight[t][i] * power[4][i])) - powerConsumedByPump * pumpStatus[t]  - maxPowerDifference[4] * (1 - membershipStatus[t][4])  <= 0;	
+			powerProduced[t] - (sum(i in breakPoints)(weight[t][i] * power[5][i])) - powerConsumedByPump * pumpStatus[t]  - maxPowerDifference[5] * (1 - membershipStatus[t][5])  <= 0;
 		}
 	
 	cons24:
 		forall(t in periods) {
-			volume[t] - sum(r in intervals)	(extremeWaterVolumes[r - 1] * membershipStatus[t][r]) >= 0;	
+			volume[t] - (sum(r in intervals)(extremeWaterVolumes[r - 1] * membershipStatus[t][r])) >= 0;	
 		}
 	
 	cons25:
 		forall(t in periods) {
-			volume[t] - sum(r in intervals)(extremeWaterVolumes[r] * membershipStatus[t][r]) <= 0;	
+			volume[t] - (sum(r in intervals)(extremeWaterVolumes[r] * membershipStatus[t][r])) <= 0;	
 		}
 		
 		
