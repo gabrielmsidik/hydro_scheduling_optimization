@@ -8,7 +8,7 @@
 
 int noOfPeriods 			= 	12;		// number of time periods
 int noOfBreakPoints 		= 	5;		// number of breakpoints of water flow
-int noOfIntervals 			= 	5;		// number of intervals of volumes
+int noOfIntervals 			= 	4;		// number of intervals of volumes
 // int noOfVolumeExtremes 	= 	6;		// number of volume extremes (number of intervals + 1) <-- requires fencepost 
 
 // ranges for parameters
@@ -105,10 +105,10 @@ execute {
 }
 
 
-float power[intervals][breakPoints];
+float power[intervals][breakPointsWith0];
 
 execute {
-	for(var z in breakPoints) {
+	for(var z in breakPointsWith0) {
 		for (var r in intervals) {
 			power[r][z] = 9.81/1000 * flowAtBreakPointValues[z] * outerSum[r][z];
  		}			
@@ -151,7 +151,7 @@ float minWaterReleased		= 0;
 
 dvar float waterFlow[periodsWith0];
 dvar float volume[periodsWith0];
-dvar float spillage[periods];
+dvar float spillage[periodsWith0];
 dvar float powerProduced[periods];
 
 // TURBINE STATUSES 	--> 	w refers to start-up phase
@@ -167,8 +167,8 @@ dvar int pumpStatus[periodsWith0]				in		0..1;
 // new variables added for linearization
 
 dvar int membershipStatus[periods][intervals]	in		0..1;		// is the volume of water for that particular period within this interval?
-dvar int contiguityStatus[periods][breakPoints]	in		0..1;		// is the waterflow value near this breakpoint? (between this breakpoint and the prior/subsequent one)
-dvar float weight[periods][breakPoints] 		in		0..1;		// weightage of how it leans towards which breakpoint (only non-zero when breakpoint is 1)
+dvar int contiguityStatus[periods][breakPointsWith0]	in		0..1;		// is the waterflow value near this breakpoint? (between this breakpoint and the prior/subsequent one)
+dvar float weight[periods][breakPointsWith0] 		in		0..1;		// weightage of how it leans towards which breakpoint (only non-zero when breakpoint is 1)
 
 
 
@@ -287,7 +287,6 @@ subject to {
 	cons1205:
 		pumpStatus[4] == 1;
 	
-	
 	cons13:
 		forall(t in periods) {
 			ytilda[t] + y[t] <= 1;		
@@ -312,14 +311,14 @@ subject to {
 	
 	cons20:
 		forall(t in periods) {
-			forall(i in breakPoints) {
+			forall(i in breakPointsWith0) {
 				weight[t][i] - contiguityStatus[t][i] <= 0;			
 			}		
 		}
 	
 	cons21:
 		forall(t in periods) {
-			forall(i, k in breakPoints: i < k - 1) {
+			forall(i, k in breakPointsWith0: i < k - 1) {
  				contiguityStatus[t][i] + contiguityStatus[t][k] <= 1;
  			}						
 		}
@@ -331,10 +330,10 @@ subject to {
 	
 	cons23:
 		forall(t in periods) {
-			forall(r in breakPoints) {
+			forall(r in intervals) {
 				powerProduced[t] - (sum(i in breakPoints)(weight[t][i] * power[r][i])) - powerConsumedByPump * pumpStatus[t]  - maxPowerDifference[r] * (1 - membershipStatus[t][r])  <= 0;		
 			}
-		}
+ 		}			
 	
 	cons24:
 		forall(t in periods) {
