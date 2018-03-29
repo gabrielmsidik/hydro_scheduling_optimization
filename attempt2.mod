@@ -155,13 +155,13 @@ dvar float spillage[periodsWith0];
 dvar float powerProduced[periods];
 
 // TURBINE STATUSES 	--> 	w refers to start-up phase
-dvar int w[periods]								in		0..1;		// w refers to the start-up phase of TURBINE
-dvar int wtilda[periods]						in 		0..1;		// wtilda refers to the shutdown phase of TURBINE
+dvar int turbineShutDownPhase[periods]								in		0..1;		// w refers to the start-up phase of TURBINE
+dvar int turbineStartUpPhase[periods]						in 		0..1;		// wtilda refers to the shutdown phase of TURBINE
 dvar int turbineStatus[periodsWith0]			in		0..1;
 
 // PUMP STATUSES 		--> 	y refers to start-up phase
-dvar int y[periods] 							in		0..1;		// y refers to the start-up phase of PUMP
-dvar int ytilda[periods]						in		0..1;		// ytilda refers to the shutdown phase of PUMP
+dvar int pumpShutDownPhase[periods] 							in		0..1;		// y refers to the start-up phase of PUMP
+dvar int pumpStartUpPhase[periods]						in		0..1;		// ytilda refers to the shutdown phase of PUMP
 dvar int pumpStatus[periodsWith0]				in		0..1;
 
 // new variables added for linearization
@@ -182,7 +182,7 @@ dvar float weight[periods][breakPointsWith0] 		in		0..1;		// weightage of how it
 
 
 
-dexpr float moneyEarnt[t in periods] = price[t] * intervalLength * powerProduced[t] - turbineStartCost * wtilda[t] - (pumpStartCost + price[t] * energyToStartPump) * ytilda[t];
+dexpr float moneyEarnt[t in periods] = price[t] * intervalLength * powerProduced[t] - turbineStartCost * turbineStartUpPhase[t] - (pumpStartCost + price[t] * energyToStartPump) * pumpStartUpPhase[t];
 dexpr float objfunction = sum(t in periods) moneyEarnt[t];
 
 
@@ -245,7 +245,7 @@ subject to {
 		
 	cons08:
 		forall(t in periods) {
-			spillage[t] - (waterToStartPump * ytilda[t] + waterToStartTurbine * wtilda[t]) >= 0; 
+			spillage[t] - (waterToStartPump * pumpStartUpPhase[t] + waterToStartTurbine * turbineStartUpPhase[t]) >= 0; 
 		}
 		
 	cons09:
@@ -255,7 +255,7 @@ subject to {
 		
 	cons10:
 		forall(t in periods) {
-			turbineStatus[t] - turbineStatus[t - 1] - (wtilda[t] - w[t]) == 0;		
+			turbineStatus[t] - turbineStatus[t - 1] - (turbineStartUpPhase[t] - turbineShutDownPhase[t]) == 0;		
 		}
 		
 	cons1001:
@@ -263,19 +263,19 @@ subject to {
 	
 	cons11:
 		forall(t in periods) {
-			wtilda[t] + w[t] <= 1;		
+			turbineStartUpPhase[t] + turbineShutDownPhase[t] <= 1;		
 		}
 		
 	cons12:
 		forall(t in periods) {
-			pumpStatus[t] - pumpStatus[t - 1] - (ytilda[t] - y[t]) == 0;		
+			pumpStatus[t] - pumpStatus[t - 1] - (pumpStartUpPhase[t] - pumpShutDownPhase[t]) == 0;		
 		}
 		
 	cons1201:
 		pumpStatus[0] == initialPumpStatus;
 		
 		
-	/*
+	
 	// artificial constraints to force pump to be turned on
 	// to be used to check impact on pump on other variables
 	//	such as:
@@ -294,14 +294,14 @@ subject to {
 		
 	cons1205:
 		pumpStatus[4] == 1;
-	*/
+	
 	
 	
 	
 	
 	cons13:
 		forall(t in periods) {
-			ytilda[t] + y[t] <= 1;		
+			pumpShutDownPhase[t] + pumpStartUpPhase[t] <= 1;		
 		}
 	
 	cons14:
