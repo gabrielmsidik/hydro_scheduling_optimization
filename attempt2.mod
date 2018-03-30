@@ -257,14 +257,18 @@ subject to {
 		 *
 		 *	The only way this equation is met is through the "discharging" of water through "spillage"
 		 *	This results in no net pumping of water into the modelled reservoir as observed in previous commits
+		 *	
+		 *	UPDATE:	Adjusted constraint 9 such that the pumpFlow will be the minimum value
+		 *			that waterFlow[t] + spillage[t] will take.
+		 *
 		 *******************************************************************************************************/
 		
-		/*
+		
 	cons09:
 		forall(t in periods) {
-			waterFlow[t] + spillage[t] - minWaterReleased >= 0;		
+			waterFlow[t] + spillage[t] - minWaterReleased - pumpFlow >= 0;		
 		}
-		*/
+		
 		
 	cons10:
 		forall(t in periods) {
