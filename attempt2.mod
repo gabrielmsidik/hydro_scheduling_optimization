@@ -3,12 +3,12 @@
  * Author: gmsidik.2016
  * Creation Date: 27 Mar, 2018 at 12:42:12 pm
  *********************************************/
-
+ 
 // values for ranges
 
 int noOfPeriods 			= 	12;		// number of time periods
 int noOfBreakPoints 		= 	5;		// number of breakpoints of water flow
-int noOfIntervals 			= 	4;		// number of intervals of volumes
+int noOfIntervals 			= 	6;		// number of intervals of volumes
 // int noOfVolumeExtremes 	= 	6;		// number of volume extremes (number of intervals + 1) <-- requires fencepost 
 
 // ranges for parameters
@@ -210,11 +210,11 @@ maximize objfunction;
 
 subject to {
 	cons02:
-		volume[12] == endVolume;
+		volume[noOfPeriods] == endVolume;
 		
 	cons03:
 		forall(t in periods) {
-			volume[t] - volume[t - 1] - 0.3600 * intervalLength * (reservoirInflow - waterFlow[t] - spillage[t]) == 0;
+			volume[t] - volume[t - 1] - 0.3600 * intervalLength * (reservoirInflow - waterFlow[t])  ==  -1 * 0.3600 * intervalLength * spillage[t];
 		}
 		
 	cons031:
@@ -248,10 +248,23 @@ subject to {
 			spillage[t] - (waterToStartPump * pumpStartUpPhase[t] + waterToStartTurbine * turbineStartUpPhase[t]) >= 0; 
 		}
 		
+		/*******************************************************************************************************
+		 *	NOTE: minWaterReleased is set to 0, and subsequently, constraint 9 is decreased to
+		 *	waterFlow[t] + spillage[t] >= 0
+		 *	This constraint results in a huge problem though, as when
+		 *
+		 *						waterFlow <= 0	(i.e. when water is being pumped into the reservoir)
+		 *
+		 *	The only way this equation is met is through the "discharging" of water through "spillage"
+		 *	This results in no net pumping of water into the modelled reservoir as observed in previous commits
+		 *******************************************************************************************************/
+		
+		/*
 	cons09:
 		forall(t in periods) {
 			waterFlow[t] + spillage[t] - minWaterReleased >= 0;		
 		}
+		*/
 		
 	cons10:
 		forall(t in periods) {
@@ -282,7 +295,7 @@ subject to {
 	//			I.		powerProduced
 	//			II.		volume
 	//			III.	spillage
-	
+	/*
 	cons1202:
 		pumpStatus[1] == 1;
 		
@@ -294,9 +307,7 @@ subject to {
 		
 	cons1205:
 		pumpStatus[4] == 1;
-	
-	
-	
+	*/
 	
 	
 	cons13:
@@ -332,8 +343,8 @@ subject to {
 		forall(t in periods) {
 			forall(i, k in breakPointsWith0: i < k - 1) {
  				contiguityStatus[t][i] + contiguityStatus[t][k] <= 1;
- 			}						
-		}
+ 			}
+  		} 			
 		
 	cons22:
 		forall(t in periods) {
@@ -379,8 +390,10 @@ subject to {
 			powerProduced[t] >= powerConsumedByPump;	
 		}
 	cons34:
-		forall(t in periodsWith0) {
+		forall(t in periods) {
 			spillage[t] >= 0;
-			// spillage[t]	<= waterToStartPump * ytilda[t]  + waterToStartTurbine * wtilda[t];	
+			// spillage[t]	<= waterToStartPump * pumpStartUpPhase[t]  + waterToStartTurbine * turbineStartUpPhase[t];	
 		}
+	cons35:
+		spillage[0] == 0;
 }
