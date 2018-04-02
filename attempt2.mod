@@ -8,7 +8,7 @@
 
 int noOfPeriods 			= 	12;		// number of time periods
 int noOfBreakPoints 		= 	5;		// number of breakpoints of water flow
-int noOfIntervals 			= 	6;		// number of intervals of volumes
+int noOfIntervals 			= 	8;		// number of intervals of volumes
 // int noOfVolumeExtremes 	= 	6;		// number of volume extremes (number of intervals + 1) <-- requires fencepost 
 
 // ranges for parameters
@@ -32,8 +32,17 @@ float K[kRange] = [307.395, 3.88 * 10^-1, -4.37*10^-4, 2.65*10^-7, -8.87*10^-11,
 
 // variables
 
+// INITIAL CASE STUDY VALUES
+
 float reservoirInflow 		= 5.32;
 float price[periods] 		= [50.17, 35.17, 35.15, 57.17, 90.00, 146.94, 95.00, 95.00, 90.61, 60.39, 95.62, 60.25];
+
+// SUGGESTED PRACTICE VALUES
+// float reservoirInflow		= 3.06;
+// float price[periods]		= [48.06, 47.56, 47.55, 54.20, 105.00, 110.63, 78.61, 94.91, 188.11, 199.13, 79.63, 58.49];
+
+
+
 float intervalLength		= 2;
 
 int turbineStartCost		= 75;
@@ -41,6 +50,9 @@ int pumpStartCost			= 75;
 
 float minFlowTurbineOn		= 8.5;
 float maxFlowTurbineOn		= 42;
+
+
+// parameterization of water flow values at each particular breakpoint
 
 float flowAtBreakPointValues[breakPointsWith0];
 
@@ -58,6 +70,9 @@ float maxVolume				= 3300;			// volumes are in 10,000 m^3
 float startVolume			= 2107.858;		// volumes are in 10,000 m^3
 float endVolume				= 2107.858;		// volumes are in 10,000 m^3
 
+
+// parameterization of the extreme water volumes for each interval
+
 float extremeWaterVolumes[intervalsWith0];
 execute{
 	for(var r in intervalsWith0) {
@@ -65,12 +80,16 @@ execute{
 	}
 }
 
+// mid point estimation for the water volumes for each interval
+
 float waterVolumeForIntervals[intervals];
 execute {
 	for(var r in intervals) {
 		waterVolumeForIntervals[r] = (extremeWaterVolumes[r] + extremeWaterVolumes[r - 1])/2;	
 	}
 }
+
+// pre-calculation of innermost summation of equation for power production of a turbine
 
 float innerSum[intervalsWith0][breakPointsWith0];
 
@@ -87,6 +106,8 @@ execute {
 		}	
 	}
 }
+
+// pre-calculation of outer summation of equation for power production of a turbine
 
 float outerSum[intervalsWith0][breakPointsWith0];
 
@@ -105,6 +126,8 @@ execute {
 }
 
 
+// populating the 2D-matrix to store the pre-computed values for the turbine's power production
+
 float power[intervals][breakPointsWith0];
 
 execute {
@@ -114,6 +137,7 @@ execute {
  		}			
 	}
 }
+
 
 float maxPowerDifference[intervals];
 
@@ -258,15 +282,19 @@ subject to {
 		 *	The only way this equation is met is through the "discharging" of water through "spillage"
 		 *	This results in no net pumping of water into the modelled reservoir as observed in previous commits
 		 *	
-		 *	UPDATE:	Adjusted constraint 9 such that the pumpFlow will be the minimum value
-		 *			that waterFlow[t] + spillage[t] will take.
+		 *	UPDATE:	Adjusted constraint 9 such that either 0 or pumpFlow (activated by pumpStatus[t]) 
+		 *			will be the minimum value that waterFlow[t] + spillage[t] will take.
 		 *
 		 *******************************************************************************************************/
 		
 		
 	cons09:
-		forall(t in periods) {
-			waterFlow[t] + spillage[t] - minWaterReleased - pumpFlow >= 0;		
+		forall(t in periods) {		
+		
+			waterFlow[t] + spillage[t] - minWaterReleased - pumpFlow * pumpStatus[t] >= 0;
+			
+			// ORIGINAL CONSTRAINT
+			// waterFlow[t] + spillage[t] - minWaterReleased >= 0;
 		}
 		
 		
@@ -393,11 +421,12 @@ subject to {
 		forall(t in periods) {
 			powerProduced[t] >= powerConsumedByPump;	
 		}
+		
 	cons34:
 		forall(t in periods) {
 			spillage[t] >= 0;
-			// spillage[t]	<= waterToStartPump * pumpStartUpPhase[t]  + waterToStartTurbine * turbineStartUpPhase[t];	
 		}
+		
 	cons35:
 		spillage[0] == 0;
 }
