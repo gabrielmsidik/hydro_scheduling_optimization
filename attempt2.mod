@@ -8,22 +8,22 @@
 
 int noOfPeriods 			= 	12;		// number of time periods
 int noOfBreakPoints 		= 	5;		// number of breakpoints of water flow
-int noOfIntervals 			= 	8;		// number of intervals of volumes
+int noOfIntervals 			= 	18;		// number of intervals of volumes
 // int noOfVolumeExtremes 	= 	6;		// number of volume extremes (number of intervals + 1) <-- requires fencepost 
 
 // ranges for parameters
 
-range periods			= 			1..noOfPeriods;
-range periodsWith0		=			0..noOfPeriods;
+range periods				= 	1..noOfPeriods;
+range periodsWith0			=	0..noOfPeriods;
 
-range breakPoints 		= 			1..noOfBreakPoints;
-range breakPointsWith0	=			0..noOfBreakPoints;
+range breakPoints 			= 	1..noOfBreakPoints;
+range breakPointsWith0		=	0..noOfBreakPoints;
 
-range intervals			=			1..noOfIntervals;
-range intervalsWith0	=			0..noOfIntervals;
+range intervals				=	1..noOfIntervals;
+range intervalsWith0		=	0..noOfIntervals;
 
-range hRange			=			0..6;
-range kRange			=			0..6;
+range hRange				=	0..6;
+range kRange				=	0..6;
 
 float L[hRange] = [4.09863600116008, -1.25535942295343, 0.160530264942775, -0.00976201903589132, 0.00030942942997293, -4.92928898248035 * 10^-6, 3.11519548768 * 10^-8];
 float K[kRange] = [307.395, 3.88 * 10^-1, -4.37*10^-4, 2.65*10^-7, -8.87*10^-11, 1.55*10^-14,-1.11*10^-18];
@@ -34,22 +34,23 @@ float K[kRange] = [307.395, 3.88 * 10^-1, -4.37*10^-4, 2.65*10^-7, -8.87*10^-11,
 
 // INITIAL CASE STUDY VALUES
 
-float reservoirInflow 		= 5.32;
-float price[periods] 		= [50.17, 35.17, 35.15, 57.17, 90.00, 146.94, 95.00, 95.00, 90.61, 60.39, 95.62, 60.25];
+float reservoirInflow 		= 	5.32;
+float price[periods] 		= 	[50.17, 35.17, 35.15, 57.17, 90.00, 146.94, 95.00, 95.00, 90.61, 60.39, 95.62, 60.25];
 
 // SUGGESTED PRACTICE VALUES
-// float reservoirInflow		= 3.06;
-// float price[periods]		= [48.06, 47.56, 47.55, 54.20, 105.00, 110.63, 78.61, 94.91, 188.11, 199.13, 79.63, 58.49];
+
+// float reservoirInflow	= 	3.06;
+// float price[periods]		= 	[48.06, 47.56, 47.55, 54.20, 105.00, 110.63, 78.61, 94.91, 188.11, 199.13, 79.63, 58.49];
 
 
 
-float intervalLength		= 2;
+float intervalLength		= 	2;
 
-int turbineStartCost		= 75;
-int pumpStartCost			= 75;
+int turbineStartCost		= 	75;
+int pumpStartCost			= 	75;
 
-float minFlowTurbineOn		= 8.5;
-float maxFlowTurbineOn		= 42;
+float minFlowTurbineOn		= 	8.5;
+float maxFlowTurbineOn		= 	42;
 
 
 // parameterization of water flow values at each particular breakpoint
@@ -62,27 +63,29 @@ execute{
 	}
 }
 
-float maxRampDown			= 70;
-float maxRampUp				= 70;
+float maxRampDown			= 	70;
+float maxRampUp				= 	70;
 
-float minVolume				= 1500;			// volumes are in 10,000 m^3
-float maxVolume				= 3300;			// volumes are in 10,000 m^3
-float startVolume			= 2107.858;		// volumes are in 10,000 m^3
-float endVolume				= 2107.858;		// volumes are in 10,000 m^3
+float minVolume				= 	1500;			// volumes are in 10,000 m^3
+float maxVolume				= 	3300;			// volumes are in 10,000 m^3
+float startVolume			= 	2107.858;		// volumes are in 10,000 m^3
+float endVolume				= 	2107.858;		// volumes are in 10,000 m^3
 
 
 // parameterization of the extreme water volumes for each interval
 
 float extremeWaterVolumes[intervalsWith0];
+
 execute{
 	for(var r in intervalsWith0) {
 		extremeWaterVolumes[r] = (maxVolume - minVolume) * r/ (noOfIntervals) + minVolume;
 	}
 }
 
-// mid point estimation for the water volumes for each interval
+// mid-point estimation for the water volumes for each interval
 
 float waterVolumeForIntervals[intervals];
+
 execute {
 	for(var r in intervals) {
 		waterVolumeForIntervals[r] = (extremeWaterVolumes[r] + extremeWaterVolumes[r - 1])/2;	
@@ -96,13 +99,13 @@ float innerSum[intervalsWith0][breakPointsWith0];
 execute {
 	for(var r in intervals) {
 		for(var z in breakPointsWith0) {
-			var value = 0;
+			innerSum[r][z] = 0;
 			
 			for (var k in kRange) {
-				value += K[k] * Math.pow(waterVolumeForIntervals[r], k);			
+				innerSum[r][z] += K[k] * Math.pow(waterVolumeForIntervals[r], k);			
 			}
 			
-			innerSum[r][z] = value - 385 - 0.01 * Math.pow(flowAtBreakPointValues[z], 2);
+			innerSum[r][z] -= 385 + 0.01 * Math.pow(flowAtBreakPointValues[z], 2);
 		}	
 	}
 }
@@ -114,13 +117,11 @@ float outerSum[intervalsWith0][breakPointsWith0];
 execute {
 	for(var r in intervalsWith0) {
 		for(var z in breakPointsWith0) {
-			var value = 0;
+			outerSum[r][z] = 0;
 			
 			for(var h in hRange) {
-				value += L[h] * Math.pow(flowAtBreakPointValues[z], h) * innerSum[r][z];			
-			}		
-			
-			outerSum[r][z] = value;
+				outerSum[r][z] += L[h] * Math.pow(flowAtBreakPointValues[z], h) * innerSum[r][z];			
+			}
 		}	
 	}
 }
@@ -143,15 +144,14 @@ float maxPowerDifference[intervals];
 
 execute {
 	for(var r in intervals) {
-		var max = -1 * 100000000;
+		maxPowerDifference[r] = -1 * 100000000;
 		
 		for (var i in breakPoints) {
 			var current = power[r][5] - power[r][i];
-			if (current > max) {
-				max = current		
+			if (current > maxPowerDifference[r]) {
+				maxPowerDifference[r] = current		
 			}		
 		}
-		maxPowerDifference[r] = max;
 	}
 }
 
@@ -179,58 +179,32 @@ dvar float spillage[periodsWith0];
 dvar float powerProduced[periods];
 
 // TURBINE STATUSES 	--> 	w refers to start-up phase
-dvar int turbineShutDownPhase[periods]								in		0..1;		// w refers to the start-up phase of TURBINE
-dvar int turbineStartUpPhase[periods]						in 		0..1;		// wtilda refers to the shutdown phase of TURBINE
-dvar int turbineStatus[periodsWith0]			in		0..1;
+dvar int turbineShutDownPhase[periods]					in		0..1;		// w refers to the start-up phase of TURBINE
+dvar int turbineStartUpPhase[periods]					in 		0..1;		// wtilda refers to the shutdown phase of TURBINE
+dvar int turbineStatus[periodsWith0]					in		0..1;
 
 // PUMP STATUSES 		--> 	y refers to start-up phase
-dvar int pumpShutDownPhase[periods] 							in		0..1;		// y refers to the start-up phase of PUMP
+dvar int pumpShutDownPhase[periods] 					in		0..1;		// y refers to the start-up phase of PUMP
 dvar int pumpStartUpPhase[periods]						in		0..1;		// ytilda refers to the shutdown phase of PUMP
-dvar int pumpStatus[periodsWith0]				in		0..1;
+dvar int pumpStatus[periodsWith0]						in		0..1;
 
 // new variables added for linearization
 
-dvar int membershipStatus[periods][intervals]	in		0..1;		// is the volume of water for that particular period within this interval?
+dvar int membershipStatus[periods][intervals]			in		0..1;		// is the volume of water for that particular period within this interval?
 dvar int contiguityStatus[periods][breakPointsWith0]	in		0..1;		// is the waterflow value near this breakpoint? (between this breakpoint and the prior/subsequent one)
-dvar float weight[periods][breakPointsWith0] 		in		0..1;		// weightage of how it leans towards which breakpoint (only non-zero when breakpoint is 1)
-
-
-
-
-
-
-
-
-
-
+dvar float weight[periods][breakPointsWith0] 			in		0..1;		// weightage of how it leans towards which breakpoint (only non-zero when breakpoint is 1)
 
 
 
 dexpr float moneyEarnt[t in periods] = price[t] * intervalLength * powerProduced[t] - turbineStartCost * turbineStartUpPhase[t] - (pumpStartCost + price[t] * energyToStartPump) * pumpStartUpPhase[t];
 dexpr float objfunction = sum(t in periods) moneyEarnt[t];
 
-
-
 maximize objfunction;
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // constraints are numbered exactly as indicated in the article
-// e.g. Equation 8.2 is the first constraint on page 173 introduced
+// additional constraints required (to initialize variables etc.) are numbered in the 0XXX series
+// e.g. the first constraint below refers to Equation 8.2 on page 173
 
 subject to {
 	cons02:
@@ -241,7 +215,7 @@ subject to {
 			volume[t] - volume[t - 1] - 0.3600 * intervalLength * (reservoirInflow - waterFlow[t])  ==  -1 * 0.3600 * intervalLength * spillage[t];
 		}
 		
-	cons031:
+	cons0301:
 		volume[0] == startVolume;
 	
 	cons04:
@@ -259,7 +233,7 @@ subject to {
 			waterFlow[t] - waterFlow[t - 1] + intervalLength * maxRampDown >= 0;		
 		}
 		
-	cons067:
+	cons0601:
 		waterFlow[0] == initialFlow;
 		
 	cons07:
@@ -412,7 +386,7 @@ subject to {
 			volume[t] >= minVolume;
 		}
 		
-	cons321:
+	cons3201:
 		forall(t in periods) {
 			volume[t] <= maxVolume;		
 		}
