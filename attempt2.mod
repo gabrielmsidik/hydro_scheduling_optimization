@@ -6,51 +6,51 @@
  
 // values for ranges
 
-int noOfPeriods 			= 	12;		// number of time periods
-int noOfBreakPoints 		= 	5;		// number of breakpoints of water flow
-int noOfIntervals 			= 	18;		// number of intervals of volumes
-// int noOfVolumeExtremes 	= 	6;		// number of volume extremes (number of intervals + 1) <-- requires fencepost 
+int noOfPeriods = 	12;		// number of time periods
+int noOfBreakPoints = 5;		// number of breakpoints of water flow
+int noOfIntervals = 18;		// number of intervals of volumes
+
+// int noOfVolumeExtremes = 6;		// number of volume extremes (number of intervals + 1) <-- requires fencepost
 
 // ranges for parameters
 
-range periods				= 	1..noOfPeriods;
-range periodsWith0			=	0..noOfPeriods;
+range periods = 1..noOfPeriods;
+range periodsWith0 = 0..noOfPeriods;
 
-range breakPoints 			= 	1..noOfBreakPoints;
-range breakPointsWith0		=	0..noOfBreakPoints;
+range breakPoints = 1..noOfBreakPoints;
+range breakPointsWith0 = 0..noOfBreakPoints;
 
-range intervals				=	1..noOfIntervals;
-range intervalsWith0		=	0..noOfIntervals;
+range intervals	= 1..noOfIntervals;
+range intervalsWith0 = 0..noOfIntervals;
 
-range hRange				=	0..6;
-range kRange				=	0..6;
+range hRange = 0..6;
+range kRange = 0..6;
+
+// Values provided by case study
 
 float L[hRange] = [4.09863600116008, -1.25535942295343, 0.160530264942775, -0.00976201903589132, 0.00030942942997293, -4.92928898248035 * 10^-6, 3.11519548768 * 10^-8];
 float K[kRange] = [307.395, 3.88 * 10^-1, -4.37*10^-4, 2.65*10^-7, -8.87*10^-11, 1.55*10^-14,-1.11*10^-18];
-
-// float K[kRange] = [307.395, 3.88*10^-5, -4.37*10^-12, 2.65*10^-19, -8.87*10^-27, 1.55*10^-34,-1.11*10^-42];
 
 // variables
 
 // INITIAL CASE STUDY VALUES
 
-float reservoirInflow 		= 	5.32;
-float price[periods] 		= 	[50.17, 35.17, 35.15, 57.17, 90.00, 146.94, 95.00, 95.00, 90.61, 60.39, 95.62, 60.25];
+float reservoirInflow = 5.32;
+float price[periods] = [50.17, 35.17, 35.15, 57.17, 90.00, 146.94, 95.00, 95.00, 90.61, 60.39, 95.62, 60.25];
 
-// SUGGESTED PRACTICE VALUES
+// ALTERNATIVE PRACTICE VALUES
 
-// float reservoirInflow	= 	3.06;
-// float price[periods]		= 	[48.06, 47.56, 47.55, 54.20, 105.00, 110.63, 78.61, 94.91, 188.11, 199.13, 79.63, 58.49];
+// float reservoirInflow = 3.06;
+// float price[periods]	= [48.06, 47.56, 47.55, 54.20, 105.00, 110.63, 78.61, 94.91, 188.11, 199.13, 79.63, 58.49];
 
 
+float intervalLength = 2;
 
-float intervalLength		= 	2;
+int turbineStartCost = 75;
+int pumpStartCost = 75;
 
-int turbineStartCost		= 	75;
-int pumpStartCost			= 	75;
-
-float minFlowTurbineOn		= 	8.5;
-float maxFlowTurbineOn		= 	42;
+float minFlowTurbineOn = 8.5;
+float maxFlowTurbineOn = 42;
 
 
 // parameterization of water flow values at each particular breakpoint
@@ -63,13 +63,13 @@ execute{
 	}
 }
 
-float maxRampDown			= 	70;
-float maxRampUp				= 	70;
+float maxRampDown = 70;
+float maxRampUp	= 70;
 
-float minVolume				= 	1500;			// volumes are in 10,000 m^3
-float maxVolume				= 	3300;			// volumes are in 10,000 m^3
-float startVolume			= 	2107.858;		// volumes are in 10,000 m^3
-float endVolume				= 	2107.858;		// volumes are in 10,000 m^3
+float minVolume	= 1500;			// volumes are in 10,000 m^3
+float maxVolume	= 3300;			// volumes are in 10,000 m^3
+float startVolume = 2107.858;		// volumes are in 10,000 m^3
+float endVolume	= 2107.858;		// volumes are in 10,000 m^3
 
 
 // parameterization of the extreme water volumes for each interval
@@ -179,25 +179,31 @@ dvar float spillage[periodsWith0];
 dvar float powerProduced[periods];
 
 // TURBINE STATUSES 	--> 	w refers to start-up phase
-dvar int turbineShutDownPhase[periods]					in		0..1;		// w refers to the start-up phase of TURBINE
-dvar int turbineStartUpPhase[periods]					in 		0..1;		// wtilda refers to the shutdown phase of TURBINE
-dvar int turbineStatus[periodsWith0]					in		0..1;
+dvar int turbineShutDownPhase[periods] in 0..1;		// w refers to the start-up phase of TURBINE
+dvar int turbineStartUpPhase[periods] in 0..1;		// wtilda refers to the shutdown phase of TURBINE
+dvar int turbineStatus[periodsWith0] in	0..1;
 
 // PUMP STATUSES 		--> 	y refers to start-up phase
-dvar int pumpShutDownPhase[periods] 					in		0..1;		// y refers to the start-up phase of PUMP
-dvar int pumpStartUpPhase[periods]						in		0..1;		// ytilda refers to the shutdown phase of PUMP
-dvar int pumpStatus[periodsWith0]						in		0..1;
+dvar int pumpShutDownPhase[periods] in 0..1;		// y refers to the start-up phase of PUMP
+dvar int pumpStartUpPhase[periods] in 0..1;		// ytilda refers to the shutdown phase of PUMP
+dvar int pumpStatus[periodsWith0] in 0..1;
 
 // new variables added for linearization
 
-dvar int membershipStatus[periods][intervals]			in		0..1;		// is the volume of water for that particular period within this interval?
-dvar int contiguityStatus[periods][breakPointsWith0]	in		0..1;		// is the waterflow value near this breakpoint? (between this breakpoint and the prior/subsequent one)
-dvar float weight[periods][breakPointsWith0] 			in		0..1;		// weightage of how it leans towards which breakpoint (only non-zero when breakpoint is 1)
+dvar int membershipStatus[periods][intervals] in 0..1;		// is the volume of water for that particular period within this interval?
+dvar int contiguityStatus[periods][breakPointsWith0] in	0..1;		// is the waterflow value near this breakpoint? (between this breakpoint and the prior/subsequent one)
+dvar float weight[periods][breakPointsWith0] in	0..1;		// weightage of how it leans towards which breakpoint (only non-zero when breakpoint is 1)
 
 
+// NOTICE: THE NEXT LINE EQUATES TO THE AMOUNT OF MONEY EARNED BY THE HYDRO-DAM
 
 dexpr float moneyEarnt[t in periods] = price[t] * intervalLength * powerProduced[t] - turbineStartCost * turbineStartUpPhase[t] - (pumpStartCost + price[t] * energyToStartPump) * pumpStartUpPhase[t];
+
+// NOTICE: THIS NEXT LINE IS THE OBJECTIVE FUNCTION: MAXIMIZING THE TOTAL SUM OF MONEY EARNED
+
 dexpr float objfunction = sum(t in periods) moneyEarnt[t];
+
+// Maximize the objective function
 
 maximize objfunction;
 
